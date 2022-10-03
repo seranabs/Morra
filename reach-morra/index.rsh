@@ -7,18 +7,18 @@
 const [ isResult, NO_WINS, A_WINS, B_WINS, DRAW,  ] = makeEnum(4);
 
 // 0 = none, 1 = B wins, 2 = draw , 3 = A wins
-const winner = (handBatman, guessBatman, handRobin, guessRobin) => {
-  const total = handBatman + handRobin;
+const winner = (handAether, guessAether, handLumine, guessLumine) => {
+  const total = handAether + handLumine;
 
-  if ( guessBatman == total && guessRobin == total  ) {
+  if ( guessAether == total && guessLumine == total  ) {
       // draw
       return DRAW
-  }  else if ( guessRobin == total) {
-      // Robin wins
+  }  else if ( guessLumine == total) {
+      // Lumine wins
       return B_WINS
   }
-  else if ( guessBatman == total ) { 
-      // Batman wins
+  else if ( guessAether == total ) { 
+      // Aether wins
       return A_WINS
   } else {
     // else noone wins
@@ -40,11 +40,11 @@ assert(winner(5,10,5,10 ) == DRAW);
 assert(winner(3,6,2,4 ) == NO_WINS);
 assert(winner(0,3,1,5 ) == NO_WINS);
 
-forall(UInt, handBatman =>
-  forall(UInt, handRobin =>
-    forall(UInt, guessBatman =>
-      forall(UInt, guessRobin =>
-    assert(isResult(winner(handBatman, guessBatman, handRobin , guessRobin)))
+forall(UInt, handAether =>
+  forall(UInt, handLumine =>
+    forall(UInt, guessAether =>
+      forall(UInt, guessLumine =>
+    assert(isResult(winner(handAether, guessAether, handLumine , guessLumine)))
 ))));
 
 
@@ -58,21 +58,21 @@ const commonInteract = {
   getGuess: Fun([], UInt),
 };
 
-const BatmanInterect = {
+const AetherInterect = {
   ...commonInteract,
   wager: UInt, 
   deadline: UInt, 
 }
 
-const RobinInteract = {
+const LumineInteract = {
   ...commonInteract,
   acceptWager: Fun([UInt], Null),
 }
 
 
 export const main = Reach.App(() => {
-  const A = Participant('Batman',BatmanInterect );
-  const B = Participant('Robin', RobinInteract );
+  const A = Participant('Aether',AetherInterect );
+  const B = Participant('Lumine', LumineInteract );
   init();
 
   // Check for timeouts
@@ -105,53 +105,53 @@ export const main = Reach.App(() => {
     commit();
 
   A.only(() => {
-    const _handBatman = interact.getHand();
-    const [_commitBatman1, _saltBatman1] = makeCommitment(interact, _handBatman);
-    const commitBatman1 = declassify(_commitBatman1);
+    const _handAether = interact.getHand();
+    const [_commitAether1, _saltAether1] = makeCommitment(interact, _handAether);
+    const commitAether1 = declassify(_commitAether1);
 
-    const _guessBatman = interact.getGuess();
-    const [_commitBatman2, _saltBatman2] = makeCommitment(interact, _guessBatman);
-    const commitBatman2 = declassify(_commitBatman2);
+    const _guessAether = interact.getGuess();
+    const [_commitAether2, _saltAether2] = makeCommitment(interact, _guessAether);
+    const commitAether2 = declassify(_commitAether2);
 
   })
   
 
-  A.publish(commitBatman1, commitBatman2)
+  A.publish(commitAether1, commitAether2)
       .timeout(relativeTime(deadline), () => closeTo(B, informTimeout));
     commit();
 
-  // Robin must NOT know about Batman hand and guess
-  unknowable(B, A(_handBatman,_guessBatman, _saltBatman1,_saltBatman2 ));
+  // Lumine must NOT know about Aether hand and guess
+  unknowable(B, A(_handAether,_guessAether, _saltAether1,_saltAether2 ));
   
-  // Get Robin  hand
+  // Get Lumine  hand
   B.only(() => {
-    const handRobin = declassify(interact.getHand());
-    const guessRobin = declassify(interact.getGuess());
+    const handLumine = declassify(interact.getHand());
+    const guessLumine = declassify(interact.getGuess());
   });
 
-  B.publish(handRobin, guessRobin)
+  B.publish(handLumine, guessLumine)
     .timeout(relativeTime(deadline), () => closeTo(A, informTimeout));
   commit();
 
   A.only(() => {
-    const saltBatman1 = declassify(_saltBatman1);
-    const handBatman = declassify(_handBatman);
-    const saltBatman2 = declassify(_saltBatman2);
-    const guessBatman = declassify(_guessBatman);
+    const saltAether1 = declassify(_saltAether1);
+    const handAether = declassify(_handAether);
+    const saltAether2 = declassify(_saltAether2);
+    const guessAether = declassify(_guessAether);
 
   });
 
-  A.publish(saltBatman1,saltBatman2, handBatman, guessBatman)
+  A.publish(saltAether1,saltAether2, handAether, guessAether)
     .timeout(relativeTime(deadline), () => closeTo(B, informTimeout));
-  checkCommitment(commitBatman1, saltBatman1, handBatman);
-  checkCommitment(commitBatman2, saltBatman2, guessBatman);
+  checkCommitment(commitAether1, saltAether1, handAether);
+  checkCommitment(commitAether2, saltAether2, guessAether);
 
   
   each([A, B], () => {
-    interact.reportHands(handBatman, guessBatman, handRobin, guessRobin);
+    interact.reportHands(handAether, guessAether, handLumine, guessLumine);
   });
 
-  result = winner(handBatman, guessBatman, handRobin, guessRobin);
+  result = winner(handAether, guessAether, handLumine, guessLumine);
   continue;
 }
 // check to make sure no DRAW or NO_WINS
